@@ -7,7 +7,7 @@ use gilded_rose::goblin::Item;
 
 fn main() {}
 
-fn UpdateAgedBrie(item: &Item) -> Item {
+fn update_aged_brie(item: &Item) -> Item {
     let mut item = item.clone();
     item.sell_in = item.sell_in - 1;
 
@@ -17,9 +17,9 @@ fn UpdateAgedBrie(item: &Item) -> Item {
     return item;
 }
 
-fn UpdateSulfuras(item: &Item) -> Item { return item.clone(); }
+fn update_sulfuras(item: &Item) -> Item { return item.clone(); }
 
-fn UpdateBackstagePasses(item: &Item) -> Item {
+fn update_backstage_passes(item: &Item) -> Item {
     let mut item = item.clone();
     item.sell_in = item.sell_in - 1;
 
@@ -33,7 +33,7 @@ fn UpdateBackstagePasses(item: &Item) -> Item {
     return item;
 }
 
-fn UpdateNormal(item: &Item) -> Item {
+fn update_normal(item: &Item) -> Item {
     let mut item = item.clone();
     item.sell_in = item.sell_in - 1;
 
@@ -45,16 +45,16 @@ fn UpdateNormal(item: &Item) -> Item {
     return item;
 }
 
-fn UpdateQuality(items: Vec<Item>) -> Vec<Item> {
-    items.iter().map(|i| UpdateItem(i)).collect()
+pub fn update_quality(items: Vec<Item>) -> Vec<Item> {
+    items.iter().map(|i| update_item(i)).collect()
 }
 
-fn UpdateItem(item: &Item) -> Item {
+fn update_item(item: &Item) -> Item {
     match item.name {
-        "Aged Brie" => UpdateAgedBrie(&item),
-        "Sulfuras, Hand of Ragnaros" =>  UpdateSulfuras(&item),
-        "Backstage passes to a TAFKAL80ETC concert" => UpdateBackstagePasses(&item),
-        _ => UpdateNormal(&item),
+        "Aged Brie" => update_aged_brie(&item),
+        "Sulfuras, Hand of Ragnaros" =>  update_sulfuras(&item),
+        "Backstage passes to a TAFKAL80ETC concert" => update_backstage_passes(&item),
+        _ => update_normal(&item),
     }
 }
 
@@ -63,9 +63,9 @@ fn normal_items_decrease_in_quality_and_get_closer_to_sell_in_0() {
     let items = vec![
         Item { name: "Normal Item", sell_in: 10, quality: 20 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].sell_in, 9);
-    assert_eq!(updatedItems[0].quality, 19);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].sell_in, 9);
+    assert_eq!(updated_items[0].quality, 19);
 }
 
 #[test]
@@ -73,8 +73,8 @@ fn normal_items_decrease_quality_twice_as_fast_after_sell_in_date_passed() {
     let items = vec![
         Item { name: "Normal Item", sell_in: 0, quality: 20 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].quality, 18);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 18);
 }
 
 #[test]
@@ -82,8 +82,8 @@ fn normal_items_quality_can_never_be_negative() {
     let items = vec![
         Item { name: "Normal Item", sell_in: 0, quality: 0 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].quality, 0);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 0);
 }
 
 #[test]
@@ -91,8 +91,8 @@ fn aged_brie_gets_closer_to_sell_in_0() {
     let items = vec![
         Item { name: "Aged Brie", sell_in: 10, quality: 20 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].sell_in, 9);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].sell_in, 9);
 }
 
 #[test]
@@ -100,8 +100,8 @@ fn aged_brie_increases_in_quality_as_it_gets_older() {
     let items = vec![
         Item { name: "Aged Brie", sell_in: 10, quality: 20 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].quality, 21);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 21);
 }
 
 #[test]
@@ -109,8 +109,8 @@ fn aged_brie_cannot_increase_past_quality_of_50() {
     let items = vec![
         Item { name: "Aged Brie", sell_in: 10, quality: 50 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].quality, 50);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 50);
 }
 
 #[test]
@@ -118,9 +118,9 @@ fn sulfuras_does_not_decrease_in_quality_or_sell_in() {
     let items = vec![
         Item { name: "Sulfuras, Hand of Ragnaros", sell_in: 10, quality: 50 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].sell_in, 10);
-    assert_eq!(updatedItems[0].quality, 50);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].sell_in, 10);
+    assert_eq!(updated_items[0].quality, 50);
 }
 
 #[test]
@@ -128,8 +128,8 @@ fn backstage_passes_gets_closer_to_sell_in_0() {
     let items = vec![
         Item { name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 10, quality: 20 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].sell_in, 9);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].sell_in, 9);
 }
 
 #[test]
@@ -137,8 +137,8 @@ fn backstage_passes_increase_in_quality_by_1_above_10_days_sell_in() {
     let items = vec![
         Item { name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 11, quality: 20 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].quality, 21);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 21);
 }
 
 #[test]
@@ -146,8 +146,8 @@ fn backstage_passes_increase_in_quality_by_2_below_10_days_sell_in() {
     let items = vec![
         Item { name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 10, quality: 20 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].quality, 22);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 22);
 }
 
 #[test]
@@ -155,8 +155,8 @@ fn backstage_passes_increase_in_quality_by_3_below_5_days_sell_in() {
     let items = vec![
         Item { name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 5, quality: 20 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].quality, 23);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 23);
 }
 
 #[test]
@@ -164,8 +164,8 @@ fn backstage_passes_become_0_quality_when_sell_in_passes() {
     let items = vec![
         Item { name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 0, quality: 20 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].quality, 0);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 0);
 }
 
 #[test]
@@ -173,6 +173,6 @@ fn backstage_passes_cannot_increase_past_quality_of_50() {
     let items = vec![
         Item { name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 10, quality: 50 },
     ];
-    let updatedItems = UpdateQuality(items);
-    assert_eq!(updatedItems[0].quality, 50);
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 50);
 }
