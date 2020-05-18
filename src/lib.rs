@@ -3,75 +3,18 @@ pub mod goblin;
 use goblin::Item;
 use std::collections::hash_map::HashMap;
 
-struct SellBy {
-    day: usize,
-}
+mod update;
+mod cond;
 
-trait ItemCondition {
-    fn item_satisfies_condition(&self, item: &Item) -> bool;
-}
-
-enum SellByCondition {
-    OnDayOrAfter,
-    After,
-    Before,
-    OnDayOrBefore,
-    WithinNDaysInclusive(usize),
-}
-
-impl ItemCondition for SellByCondition {
-    fn item_satisfies_condition(&self, item: &Item) -> bool {
-        use SellByCondition::*;
-        match self {
-            OnDayOrAfter => item.sell_in <= 0,
-            After => item.sell_in < 0,
-            Before => item.sell_in > 0,
-            OnDayOrBefore => item.sell_in >= 0,
-            WithinNDaysInclusive(n) => item.sell_in > 0 && item.sell_in <= (*n as i64),
-        }
-    }
-}
-struct AlwaysTrueCondition;
-impl ItemCondition for AlwaysTrueCondition {
-    fn item_satisfies_condition(&self, item: &Item) -> bool {
-        true
-    }
-}
-
-enum ItemChange {
-    DecreaseQuality(usize),
-    IncreaseQuality(usize),
-    DecreaseSellInByOne,
-    SetQuality(i64),
-}
-
-// Not sure how this will work for Sulfuras
-impl ItemChange {
-    fn apply_item_change(&self, item: &mut Item) {
-        use ItemChange::*;
-        match self {
-            DecreaseQuality(amount) => item.quality -= *amount as i64,
-            IncreaseQuality(amount) => item.quality += *amount as i64,
-            DecreaseSellInByOne => item.sell_in -= 1,
-            SetQuality(amount) => item.quality = *amount,
-        }
-
-        // universal rule quality isn't
-        if item.quality < 0 {
-            item.quality = 0;
-        }
-
-        if item.quality > 50 {
-            item.quality = 50;
-        }
-    }
-}
+use cond::*;
+use update::*;
 
 enum ItemBehavior {
     EachDay {
         condition: Box<dyn ItemCondition>,
         effects: Vec<ItemChange>,
     },
+    All(Vec<ItemBehavior>),
 }
 
 fn update_item_each_day(mut item: &mut Item, behavior: &ItemBehavior) {
@@ -82,6 +25,11 @@ fn update_item_each_day(mut item: &mut Item, behavior: &ItemBehavior) {
                     eff.apply_item_change(&mut item);
                 }
             }
+        }
+        ItemBehavior::All(list) => {
+            list.iter()
+                .map(|beh| update_item_each_day(&mut item, beh))
+                .count();
         }
     }
 }
@@ -95,19 +43,43 @@ impl ItemBehavior {
     }
 }
 
+struct StoreSettings {
+    item_behaviors: HashMap<String, ItemBehavior>,
+    default_behavior: ItemBehavior,
+}
 
-pub struct StoreSettings {
-    normal_behavior: Vec<ItemBehavior>,
-    item_behaviors: HashMap<String, Vec<ItemBehavior>>,
+impl StoreSettings {
+    fn new(default_behavior: ItemBehavior) -> Self {
+        StoreSettings {
+            item_behaviors: HashMap::new(),
+            default_behavior,
+        }
+    }
+
+    fn add_item_behaviors(&mut self, item_id: String, behaviors: Vec<ItemBehavior>) {
+        self.item_behaviors
+            .insert(item_id, ItemBehavior::All(behaviors));
+    }
 }
 
 use test_store::new_test_store;
 mod test_store {
     use super::*;
 
-    pub fn new_test_store() -> StoreSettings {
-        let mut item_behaviors: HashMap<String, Vec<ItemBehavior>> = HashMap::new();
-        item_behaviors.insert(
+    pub(super) fn new_test_store() -> StoreSettings {
+        let mut settings = StoreSettings::new(ItemBehavior::All(vec![
+            ItemBehavior::each_day_decrease_sell_in(),
+            ItemBehavior::EachDay {
+                condition: Box::new(AlwaysTrueCondition),
+                effects: vec![ItemChange::DecreaseQuality(1)],
+            },
+            ItemBehavior::EachDay {
+                condition: Box::new(SellByCondition::After),
+                effects: vec![ItemChange::DecreaseQuality(1)],
+            },
+        ]));
+
+        settings.add_item_behaviors(
             String::from("Conjured Mana Cake"),
             vec![
                 ItemBehavior::each_day_decrease_sell_in(),
@@ -121,11 +93,8 @@ mod test_store {
                 },
             ],
         );
-        item_behaviors.insert(
-            String::from("Sulfuras, Hand of Ragnaros"),
-            vec![],
-        );
-        item_behaviors.insert(
+        settings.add_item_behaviors(String::from("Sulfuras, Hand of Ragnaros"), vec![]);
+        settings.add_item_behaviors(
             String::from("Aged Brie"),
             vec![
                 ItemBehavior::each_day_decrease_sell_in(),
@@ -135,7 +104,7 @@ mod test_store {
                 },
             ],
         );
-        item_behaviors.insert(
+        settings.add_item_behaviors(
             String::from("Backstage passes to a TAFKAL80ETC concert"),
             vec![
                 ItemBehavior::each_day_decrease_sell_in(),
@@ -144,11 +113,11 @@ mod test_store {
                     effects: vec![ItemChange::IncreaseQuality(1)],
                 },
                 ItemBehavior::EachDay {
-                    condition: Box::new(SellByCondition::WithinNDaysInclusive(9)),
+                    condition: Box::new(SellByCondition::WithinNDaysExclusive(10)),
                     effects: vec![ItemChange::IncreaseQuality(1)],
                 },
                 ItemBehavior::EachDay {
-                    condition: Box::new(SellByCondition::WithinNDaysInclusive(4)),
+                    condition: Box::new(SellByCondition::WithinNDaysExclusive(5)),
                     effects: vec![ItemChange::IncreaseQuality(1)],
                 },
                 ItemBehavior::EachDay {
@@ -157,65 +126,14 @@ mod test_store {
                 },
             ],
         );
-        
 
-        StoreSettings {
-            normal_behavior: vec![
-                ItemBehavior::each_day_decrease_sell_in(),
-                ItemBehavior::EachDay {
-                    condition: Box::new(AlwaysTrueCondition),
-                    effects: vec![ItemChange::DecreaseQuality(1)],
-                },
-                ItemBehavior::EachDay {
-                    condition: Box::new(SellByCondition::After),
-                    effects: vec![ItemChange::DecreaseQuality(1)],
-                },
-            ],
-            item_behaviors,
-        }
+        settings
     }
 
-    fn update_backstage_passes(item: Item) -> Item {
-        let mut item = item.clone();
-        item.sell_in = item.sell_in - 1;
-
-        if item.quality == 50 {
-            return item;
-        }
-
-        item.quality = item.quality + 1;
-
-        if item.sell_in < 10 {
-            item.quality = item.quality + 1
-        }
-        if item.sell_in < 5 {
-            item.quality = item.quality + 1
-        }
-        if item.sell_in < 0 {
-            item.quality = 0
-        }
-        return item;
-    }
-
-    fn update_conjured_mana_cake(item: Item) -> Item {
-        let mut item = item.clone();
-        item.sell_in = item.sell_in - 1;
-
-        if item.quality == 0 {
-            return item;
-        }
-
-        item.quality = item.quality - 2;
-        if item.sell_in <= 0 {
-            item.quality = item.quality - 2
-        }
-
-        return item;
-    }
 }
 
 /// Called after one day passes, all items should be updated accordingly
-pub fn update_quality(mut items: &mut Vec<Item>) {
+pub fn update_quality(items: &mut Vec<Item>) {
     for mut item in items.iter_mut() {
         update_item(&mut item);
     }
@@ -223,19 +141,13 @@ pub fn update_quality(mut items: &mut Vec<Item>) {
 
 fn update_item(mut item: &mut Item) {
     let standard = new_test_store();
-    let apply_behaviors = standard.item_behaviors.get(item.name).unwrap_or(&standard.normal_behavior);
+    let apply_behaviors = standard
+        .item_behaviors
+        .get(item.name)
+        .unwrap_or(&standard.default_behavior);
 
     // one day passes...
-    for beh in apply_behaviors.iter() {
-        update_item_each_day(&mut item, &beh);
-    }
-    // match item.name {
-    //     "Aged Brie" => update_aged_brie(Item),
-    //     "Sulfuras, Hand of Ragnaros" => update_sulfuras(Item),
-    //     "Backstage passes to a TAFKAL80ETC concert" => update_backstage_passes(Item),
-    //     "Conjured Mana Cake" => update_conjured_mana_cake(Item),
-    //     _ => update_normal(Item),
-    // }
+    update_item_each_day(&mut item, &apply_behaviors);
 }
 
 #[test]
@@ -296,7 +208,7 @@ fn normal_items_quality_can_never_be_negative() {
 
 #[test]
 fn aged_brie_gets_closer_to_sell_in_0() {
-    let mut item  = Item {
+    let mut item = Item {
         name: "Aged Brie",
         sell_in: 10,
         quality: 20,
