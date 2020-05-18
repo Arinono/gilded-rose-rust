@@ -45,6 +45,18 @@ fn update_normal(item: &Item) -> Item {
     return item;
 }
 
+fn update_conjured_mana_cake(item: &Item) -> Item {
+    let mut item = item.clone();
+    item.sell_in = item.sell_in - 1;
+
+    if item.quality == 0 { return item; }
+
+    item.quality = item.quality - 2;
+    if item.sell_in <= 0 { item.quality = item.quality - 2 }
+
+    return item;
+}
+
 pub fn update_quality(items: Vec<Item>) -> Vec<Item> {
     items.iter().map(|i| update_item(i)).collect()
 }
@@ -54,6 +66,7 @@ fn update_item(item: &Item) -> Item {
         "Aged Brie" => update_aged_brie(&item),
         "Sulfuras, Hand of Ragnaros" =>  update_sulfuras(&item),
         "Backstage passes to a TAFKAL80ETC concert" => update_backstage_passes(&item),
+        "Conjured Mana Cake" => update_conjured_mana_cake(&item),
         _ => update_normal(&item),
     }
 }
@@ -175,4 +188,40 @@ fn backstage_passes_cannot_increase_past_quality_of_50() {
     ];
     let updated_items = update_quality(items);
     assert_eq!(updated_items[0].quality, 50);
+}
+
+#[test]
+fn conjured_mana_cake_gets_closer_to_sell_by_date() {
+    let items = vec![
+        Item { name: "Conjured Mana Cake", sell_in: 10, quality: 20 },
+    ];
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].sell_in, 9);
+}
+
+#[test]
+fn conjured_mana_cake_degrades_in_quality_increments_of_2() {
+    let items = vec![
+        Item { name: "Conjured Mana Cake", sell_in: 10, quality: 20 },
+    ];
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 18);
+}
+
+#[test]
+fn conjured_mana_cakes_decrease_quality_twice_as_fast_after_sell_in_date_passed() {
+    let items = vec![
+        Item { name: "Conjured Mana Cake", sell_in: 0, quality: 20 },
+    ];
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 16);
+}
+
+#[test]
+fn conjured_mana_cake_quality_can_never_be_negative() {
+    let items = vec![
+        Item { name: "Conjured Mana Cake", sell_in: 0, quality: 0 },
+    ];
+    let updated_items = update_quality(items);
+    assert_eq!(updated_items[0].quality, 0);
 }

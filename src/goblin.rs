@@ -4,7 +4,7 @@
 
 /// TODO: add documentation here
 /// -- The Management
-#[derive(Debug, Clone)]
+#[derive(Debug,Clone)]
 pub struct Item {
     pub name: &'static str,
     pub sell_in: i64,
