@@ -8,32 +8,32 @@ use gilded_rose::goblin::Item;
 fn main() {
     let mut items = vec![
         Item {
-            name: "+5 Dexterity Vest",
+            name: ProductTypes::DexterityVest.name(),
             sell_in: 10,
             quality: 20,
         },
         Item {
-            name: "Aged Brie",
+            name: ProductTypes::AgedBrie.name(),
             sell_in: 2,
             quality: 0,
         },
         Item {
-            name: "Elixir of the Mongoose",
+            name: ProductTypes::ElixirOfTheMongoose.name(),
             sell_in: 5,
             quality: 7,
         },
         Item {
-            name: "Sulfuras, Hand of Ragnaros",
+            name: ProductTypes::SulfurasHandOfRagnaros.name(),
             sell_in: 0,
             quality: 80,
         },
         Item {
-            name: "Backstage passes to a TAFKAL80ETC concert",
+            name: ProductTypes::BackstagePasses.name(),
             sell_in: 15,
             quality: 20,
         },
         Item {
-            name: "Conjured Mana Cake",
+            name: ProductTypes::ConjuredManaCake.name(),
             sell_in: 3,
             quality: 6,
         },
@@ -45,6 +45,28 @@ fn main() {
             println!("{:?}", item);
         }
         update_quality(&mut items[..]);
+    }
+}
+
+enum ProductTypes {
+    AgedBrie,
+    BackstagePasses,
+    ConjuredManaCake,
+    DexterityVest,
+    ElixirOfTheMongoose,
+    SulfurasHandOfRagnaros,
+}
+
+impl ProductTypes {
+    fn name(&self) -> &str {
+        match self {
+            Self::AgedBrie => "Aged Brie",
+            Self::BackstagePasses => "Backstage passes to a TAFKAL80ETC concert",
+            Self::ConjuredManaCake => "Conjured Mana Cake",
+            Self::DexterityVest => "+5 Dexterity Vest",
+            Self::ElixirOfTheMongoose => "Elixir of the Mongoose",
+            Self::SulfurasHandOfRagnaros => "Sulfuras, Hand of Ragnaros",
+        }
     }
 }
 
