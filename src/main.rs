@@ -49,55 +49,46 @@ fn main() {
 }
 
 fn update_quality(items: &mut [Item]) {
-    for i in 0..items.len() {
-        if items[i].name != ProductTypes::AgedBrie
-            && items[i].name != ProductTypes::BackstagePasses
-        {
-            if items[i].quality > 0 {
-                if items[i].name != ProductTypes::SulfurasHandOfRagnaros {
-                    items[i].quality = items[i].quality - 1;
-                }
-            }
-        } else {
-            if items[i].quality < 50 {
-                items[i].quality = items[i].quality + 1;
-
-                if items[i].name == ProductTypes::BackstagePasses {
-                    if items[i].sell_in < 11 {
-                        if items[i].quality < 50 {
-                            items[i].quality = items[i].quality + 1;
-                        }
-                    }
-
-                    if items[i].sell_in < 6 {
-                        if items[i].quality < 50 {
-                            items[i].quality = items[i].quality + 1;
-                        }
-                    }
-                }
-            }
-        }
-
-        if items[i].name != ProductTypes::SulfurasHandOfRagnaros {
-            items[i].sell_in = items[i].sell_in - 1;
-        }
-
-        if items[i].sell_in < 0 {
-            if items[i].name != ProductTypes::AgedBrie {
-                if items[i].name != ProductTypes::BackstagePasses {
-                    if items[i].quality > 0 {
-                        if items[i].name != ProductTypes::SulfurasHandOfRagnaros {
-                            items[i].quality = items[i].quality - 1;
-                        }
-                    }
+    for i in items {
+        match i.name {
+            ProductTypes::AgedBrie => {
+                if i.sell_in <= 0 {
+                    i.quality += 2
                 } else {
-                    items[i].quality = items[i].quality - items[i].quality;
+                    i.quality += 1
                 }
-            } else {
-                if items[i].quality < 50 {
-                    items[i].quality = items[i].quality + 1;
+                if i.quality >= 50 {
+                    i.quality = 50
+                }
+            },
+            ProductTypes::BackstagePasses => {
+                if i.sell_in <= 0 {
+                    i.quality = 0
+                } else if i.sell_in > 0 && i.sell_in <= 5 {
+                    i.quality += 3
+                } else if i.sell_in > 5 && i.sell_in <= 10 {
+                    i.quality += 2
+                } else {
+                    i.quality += 1
+                }
+                if i.quality >= 50 {
+                    i.quality = 50
+                }
+            },
+            ProductTypes::SulfurasHandOfRagnaros => (),
+            _ => {
+                if i.sell_in <= 0 {
+                    i.quality -= 2
+                } else {
+                    i.quality -= 1
+                }
+                if i.quality <= 0 {
+                    i.quality = 0
                 }
             }
+        }
+        if i.name != ProductTypes::SulfurasHandOfRagnaros {
+            i.sell_in -= 1
         }
     }
 }
