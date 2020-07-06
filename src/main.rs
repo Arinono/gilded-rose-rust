@@ -50,49 +50,63 @@ fn main() {
 
 fn update_quality(items: &mut [Item]) {
     for i in items {
-        match i.name {
-            ProductTypes::AgedBrie => {
-                if i.sell_in <= 0 {
-                    i.quality += 2
-                } else {
-                    i.quality += 1
-                }
-                if i.quality >= 50 {
-                    i.quality = 50
-                }
-            },
-            ProductTypes::BackstagePasses => {
-                if i.sell_in <= 0 {
-                    i.quality = 0
-                } else if i.sell_in > 0 && i.sell_in <= 5 {
-                    i.quality += 3
-                } else if i.sell_in > 5 && i.sell_in <= 10 {
-                    i.quality += 2
-                } else {
-                    i.quality += 1
-                }
-                if i.quality >= 50 {
-                    i.quality = 50
-                }
-            },
-            ProductTypes::SulfurasHandOfRagnaros => (),
-            _ => {
-                if i.sell_in <= 0 {
-                    i.quality -= 2
-                } else {
-                    i.quality -= 1
-                }
-                if i.quality <= 0 {
-                    i.quality = 0
-                }
-            }
-        }
-        if i.name != ProductTypes::SulfurasHandOfRagnaros {
-            i.sell_in -= 1
-        }
+        i.quality = _update_quality(i);
+        i.quality = _normalize_quality(i);
+        i.sell_in = _update_sell_in(i);
     }
 }
 
+fn _update_sell_in (i: &Item) -> i64 {
+    if i.name != ProductTypes::SulfurasHandOfRagnaros {
+        i.sell_in - 1
+    } else {
+        i.sell_in
+    }
+}
+ 
+fn _normalize_quality(i: &Item) -> i64 {
+    if i.name == ProductTypes::SulfurasHandOfRagnaros {
+        return i.quality;
+    }
+    if i.quality >= 50 {
+        return 50;
+    } else if i.quality <= 0 {
+        return 0
+    } else {
+        return i.quality;
+    }
+}
+
+fn _update_quality(item: &Item) -> i64 {
+    match item.name {
+        ProductTypes::AgedBrie => {
+            if item.sell_in <= 0 {
+                item.quality + 2
+            } else {
+                item.quality + 1
+            }
+        },
+        ProductTypes::BackstagePasses => {
+            if item.sell_in <= 0 {
+                item.quality - item.quality
+            } else if item.sell_in > 0 && item.sell_in <= 5 {
+                item.quality + 3
+            } else if item.sell_in > 5 && item.sell_in <= 10 {
+                item.quality + 2
+            } else {
+                item.quality + 1
+            }
+        },
+        ProductTypes::SulfurasHandOfRagnaros => item.quality,
+        _ => {
+            if item.sell_in <= 0 {
+                item.quality - 2
+            } else {
+                item.quality - 1
+            }
+        }
+    }
+}
 #[test]
 fn normal_items_decrease_quality() {
     let mut items = vec![Item {
